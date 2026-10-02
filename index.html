@@ -69,8 +69,8 @@ a{color:inherit}
 .hero-inner{max-width:var(--max);margin:0 auto;padding:clamp(58px,9vh,96px) 20px clamp(52px,8vh,84px)}
 .hero-badge{display:inline-flex;align-items:center;gap:.6em;background:#fff;color:#171717;font-weight:700;font-size:.9rem;padding:.55em 1em;border-radius:999px;margin-bottom:1.4em;border:2px solid var(--yellow-bright)}
 .hero-badge i{width:10px;height:10px;border-radius:50%;background:#171717;display:inline-block}
-.hero h1{font-size:clamp(2.3rem,6vw,3.7rem);max-width:12em;margin-bottom:.35em;color:#fff}
-.hero h1 mark{background:var(--yellow-bright);color:#171717;padding:0 .12em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.hero h1{font-size:clamp(2.3rem,6vw,3.7rem);max-width:12em;margin-bottom:.35em;color:#fff;line-height:1.28}
+.hero h1 .accent{color:var(--yellow-bright)}
 .hero-sub{font-size:clamp(1.06rem,2.2vw,1.25rem);color:#e7e5e4;max-width:36em;margin-bottom:1.8em}
 .hero-ctas{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:2.1em}
 .hero-points{display:flex;flex-wrap:wrap;gap:10px 28px;list-style:none;border-top:1px solid #525252;padding-top:1.3em;font-weight:600}
@@ -187,7 +187,7 @@ a{color:inherit}
   <section class="hero">
     <div class="hero-inner">
       <div class="hero-badge"><i aria-hidden="true"></i> Websites for local trades and small businesses</div>
-      <h1>Your next customer Googled you first. <mark>Look like the obvious choice.</mark></h1>
+      <h1>Your next customer Googled you first. <span class="accent">Look like the obvious choice.</span></h1>
       <p class="hero-sub">I build clean, fast websites for Tampa Bay trade companies, then keep your Google profile, reviews, and job photos working month after month. A good website and a strong Google presence can bring in thousands more a month in local work. A dead one sends that work to your competitor.</p>
       <div class="hero-ctas">
         <a class="btn btn-yellow" href="#plans">See the plans</a>
