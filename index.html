@@ -409,6 +409,67 @@ main{counter-reset:exhibit}
   .marquee-track{animation:none}
 }
 
+/* ===== Motion expansion: reactive hero, drawn lines, sequenced pops, spotlights ===== */
+.hero-inner{position:relative;z-index:1}
+.hero::before{
+  content:"";position:absolute;z-index:0;pointer-events:none;
+  width:62vw;height:62vw;right:-18vw;top:-24vw;border-radius:50%;
+  background:radial-gradient(circle, rgba(37,208,242,.20), rgba(37,208,242,0) 65%);
+  animation:auroraDrift 11s ease-in-out infinite alternate;
+}
+.hero::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(430px circle at var(--spotX,72%) var(--spotY,28%), rgba(37,208,242,.14), rgba(37,208,242,0) 62%);
+}
+@keyframes auroraDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(-46px,34px) scale(1.12)}}
+.browser-mock{
+  transform:translateY(var(--parallaxY,0px)) perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) rotate(calc(1.2deg + var(--scrollRz,0deg)));
+}
+.float-card{animation:popIn .55s ease both, floaty 5.5s ease-in-out infinite}
+.fc-top{animation-delay:.85s, 1.6s}
+.fc-bottom{animation-delay:1.05s, 1.9s}
+.section h2::after{transform:scaleX(0);transform-origin:left center;transition:transform .8s cubic-bezier(.22,.9,.3,1) .25s}
+.section h2.in::after{transform:scaleX(1)}
+.process{position:relative}
+@media(min-width:981px){
+  .process::before{
+    content:"";position:absolute;left:1%;right:1%;top:3px;height:5px;z-index:2;pointer-events:none;
+    background:linear-gradient(90deg,#25D0F2,#FFFFFF,#25D0F2);border-radius:3px;
+    transform:scaleX(0);transform-origin:left center;transition:transform 1.25s cubic-bezier(.22,.9,.3,1) .2s;
+  }
+  .process.in::before{transform:scaleX(1)}
+}
+@keyframes numPop{0%{transform:scale(.5) rotate(-14deg);opacity:0}70%{transform:scale(1.12) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.card.in .card-num{animation:numPop .55s ease both}
+@keyframes checkPop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.25);opacity:1}100%{transform:scale(1)}}
+.plan.in ul li .check{animation:checkPop .4s ease both}
+.plan.in ul li:nth-child(2) .check{animation-delay:.09s}
+.plan.in ul li:nth-child(3) .check{animation-delay:.18s}
+.plan.in ul li:nth-child(4) .check{animation-delay:.27s}
+.plan.in ul li:nth-child(5) .check{animation-delay:.36s}
+@keyframes stepNumFlip{0%{transform:rotateX(85deg) translateY(8px);opacity:0}100%{transform:rotateX(0) translateY(0);opacity:1}}
+.step.in strong{animation:stepNumFlip .55s ease both;transform-origin:top center}
+.card{background-image:radial-gradient(340px circle at var(--mx,50%) var(--my,0%), rgba(37,208,242,.13), rgba(37,208,242,0) 55%)}
+@keyframes faqDrop{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+.faq-item[open ] p{animation:faqDrop .35s ease both}
+.btn{position:relative;overflow:hidden}
+.btn::after{
+  content:"";position:absolute;top:0;bottom:0;left:0;width:45%;pointer-events:none;
+  background:linear-gradient(100deg, rgba(255,255,255,0), rgba(255,255,255,.35), rgba(255,255,255,0));
+  transform:translateX(-220%) skewX(-18deg);transition:transform .6s ease;
+}
+.btn:hover::after{transform:translateX(320%) skewX(-18deg)}
+@keyframes ghostDrift2{from{transform:translate(0,0) rotate(0)}to{transform:translate(-16px,16px) rotate(-2deg)}}
+.section::before{animation:ghostDrift2 8s ease-in-out infinite alternate}
+@media (prefers-reduced-motion: reduce){
+  .hero::before{animation:none}
+  .float-card{animation:none}
+  .card.in .card-num,.plan.in ul li .check,.step.in strong,.faq-item[open ] p{animation:none}
+  .section h2::after{transform:none;transition:none}
+  .process::before{transform:none;transition:none}
+  .btn::after{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -707,6 +768,59 @@ main{counter-reset:exhibit}
     entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); setTimeout(function(){ e.target.style.transitionDelay = '0ms'; }, 950); } });
   }, { threshold: 0.12 });
   items.forEach(function(el){ io.observe(el); });
+})();
+</script>
+<script>
+(function(){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var fine = window.matchMedia('(pointer: fine)').matches;
+  var hero = document.querySelector('.hero');
+  var visual = document.querySelector('.hero-visual');
+  if (hero && visual && fine) {
+    hero.addEventListener('pointermove', function(e){
+      var r = hero.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      hero.style.setProperty('--spotX', (x * 100) + '%');
+      hero.style.setProperty('--spotY', (y * 100) + '%');
+      visual.style.setProperty('--ry', ((x - .5) * 7).toFixed(2) + 'deg');
+      visual.style.setProperty('--rx', ((.5 - y) * 6).toFixed(2) + 'deg');
+    });
+    hero.addEventListener('pointerleave', function(){
+      visual.style.setProperty('--rx', '0deg');
+      visual.style.setProperty('--ry', '0deg');
+    });
+  }
+  if (visual) {
+    var ticking = false;
+    function parallax(){
+      var y = window.scrollY || window.pageYOffset || 0;
+      var p = Math.min(y / 600, 1);
+      visual.style.setProperty('--parallaxY', (p * -14).toFixed(1) + 'px');
+      visual.style.setProperty('--scrollRz', (p * -1.2).toFixed(2) + 'deg');
+    }
+    window.addEventListener('scroll', function(){
+      if (!ticking) { ticking = true; requestAnimationFrame(function(){ parallax(); ticking = false; }); }
+    }, { passive: true });
+    parallax();
+  }
+  if (fine) {
+    document.querySelectorAll('.card').forEach(function(card){
+      card.addEventListener('pointermove', function(e){
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+        card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+      });
+    });
+  }
+  var proc = document.querySelector('.process');
+  if (proc) {
+    if ('IntersectionObserver' in window) {
+      var po = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){ if (en.isIntersecting) { proc.classList.add('in'); po.disconnect(); } });
+      }, { threshold: 0.35 });
+      po.observe(proc);
+    } else { proc.classList.add('in'); }
+  }
 })();
 </script>
 </body>
