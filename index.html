@@ -323,9 +323,68 @@ h2{font-size:clamp(2rem,4.6vw,2.9rem)}
   repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 2px, rgba(255,255,255,0) 2px 18px),
   linear-gradient(160deg,#101010,#050505)}
 
+/* ===== Lively layer: motion and interactivity, information unchanged ===== */
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes slideFromRight{from{opacity:0;transform:translateX(70px) rotate(3deg)}to{opacity:1;transform:rotate(0)}}
+@keyframes popIn{0%{opacity:0;transform:scale(.7)}70%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+@keyframes floaty{0%,100%{margin-top:0}50%{margin-top:-9px}}
+.hero-copy > *{animation:riseIn .8s cubic-bezier(.22,.9,.3,1) both}
+.hero-copy > *:nth-child(2){animation-delay:.12s}
+.hero-copy > *:nth-child(3){animation-delay:.24s}
+.hero-copy > *:nth-child(4){animation-delay:.36s}
+.hero-copy > *:nth-child(5){animation-delay:.48s}
+.hero-visual{animation:slideFromRight .9s cubic-bezier(.22,.9,.3,1) .25s both}
+.float-card{animation:popIn .55s ease both}
+.fc-top{animation-delay:.85s}
+.fc-bottom{animation-delay:1.05s}
+.float-card{animation-name:popIn}
+.hero-visual:hover .browser-mock{transform:rotate(0deg)}
+.browser-mock{transition:transform .45s ease}
+.reveal{transition:opacity .75s cubic-bezier(.22,.9,.3,1),transform .75s cubic-bezier(.22,.9,.3,1)}
+.rv-left{transform:translateX(-56px)}
+.rv-right{transform:translateX(56px)}
+.rv-pop{transform:scale(.9) translateY(16px)}
+.rv-left.in,.rv-right.in,.rv-pop.in{transform:none}
+#scrollProgress{position:fixed;top:0;left:0;height:4px;width:0;background:#FFF3D6;z-index:80;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+.chip{transition:transform .18s ease}
+.chip:hover{transform:translateY(-3px) scale(1.05)}
+.faq-item summary{font-family:"Barlow",sans-serif;font-weight:700;font-size:1.12rem;color:#111;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary::after{content:"+";flex:none;width:30px;height:30px;border-radius:50%;background:#111;color:#FFF3D6;display:inline-flex;align-items:center;justify-content:center;font-size:1.25rem;line-height:1}
+.faq-item[open ] summary::after{content:"\2212"}
+.faq-item summary:hover{color:#000;text-decoration:underline;text-underline-offset:4px}
+.faq-item p{margin-top:.6em}
+@media (prefers-reduced-motion: reduce){
+  .hero-copy > *,.hero-visual,.float-card{animation:none}
+  .reveal,.rv-left,.rv-right,.rv-pop{opacity:1;transform:none;transition:none}
+}
+
+/* ===== Exhibit layer: each section presented like a museum exhibit plate ===== */
+main{counter-reset:exhibit}
+.section{counter-increment:exhibit;position:relative;overflow:hidden}
+.section .wrap{position:relative;z-index:1}
+.section::before{
+  content:counter(exhibit, decimal-leading-zero);
+  position:absolute;top:6px;right:3vw;z-index:0;pointer-events:none;
+  font-family:"Oswald",sans-serif;font-weight:700;line-height:1;
+  font-size:clamp(7rem,20vw,14rem);
+  color:transparent;-webkit-text-stroke:2px rgba(255,243,214,.17);
+}
+.kicker{transform:rotate(-2deg);border:2px solid #111}
+.dark .kicker{border-color:#FFF3D6}
+.section h2::after{content:"";display:block;width:88px;height:7px;background:#FFF3D6;margin-top:20px;box-shadow:4px 4px 0 rgba(0,0,0,.35)}
+.dark h2::after{background:#FFF3D6}
+.card{border-width:2px}
+.card:hover{transform:translateY(-5px) rotate(-.5deg)}
+.grid .card:nth-child(even):hover{transform:translateY(-5px) rotate(.5deg)}
+.plan-tag{transform:rotate(-3deg)}
+.step strong{font-size:2.6rem}
+@media (prefers-reduced-motion: reduce){.card:hover{transform:none}}
+
 </style>
 </head>
 <body>
+<div id="scrollProgress" aria-hidden="true"></div>
 
 <header class="site-header">
   <div class="header-inner">
@@ -540,26 +599,26 @@ h2{font-size:clamp(2rem,4.6vw,2.9rem)}
       <span class="kicker">Questions <span>•</span> Straight answers</span>
       <h2>Owners usually ask this first</h2>
       <div class="faq">
-        <div class="faq-item">
-          <h3>How fast can my site be live?</h3>
+        <details class="faq-item" open>
+          <summary>How fast can my site be live?</summary>
           <p>Usually about a week from when we start, as long as I have your services, towns, and a few photos from you.</p>
-        </div>
-        <div class="faq-item">
-          <h3>Do I own my website?</h3>
+        </details>
+        <details class="faq-item">
+          <summary>Do I own my website?</summary>
           <p>On the Launch plan, yes, you own it outright. On Care and Everything Handled, your site lives on your own domain and I keep it running for you month to month.</p>
-        </div>
-        <div class="faq-item">
-          <h3>What do you need from me each month?</h3>
+        </details>
+        <details class="faq-item">
+          <summary>What do you need from me each month?</summary>
           <p>Just your job photos. Text them with one line, what the job was and what town. I handle the posting, the captions, the reviews, and the checks.</p>
-        </div>
-        <div class="faq-item">
-          <h3>Will you get me to number one on Google?</h3>
+        </details>
+        <details class="faq-item">
+          <summary>Will you get me to number one on Google?</summary>
           <p>No one honest can promise that, and I will not. I do the weekly and monthly work that gives you the best shot at being seen, and I show you what was done in a monthly report.</p>
-        </div>
-        <div class="faq-item">
-          <h3>Is there a contract on the monthly plans?</h3>
+        </details>
+        <details class="faq-item">
+          <summary>Is there a contract on the monthly plans?</summary>
           <p>No. Care and Everything Handled are month to month, and the first month is free.</p>
-        </div>
+        </details>
       </div>
     </div>
   </section>
@@ -594,11 +653,38 @@ h2{font-size:clamp(2rem,4.6vw,2.9rem)}
 
 <script>
 (function(){
-  var items = document.querySelectorAll('.card, .step, .faq-item, .work-card, .honest, .hero-visual');
-  if (!('IntersectionObserver' in window)) { return; }
-  items.forEach(function(el){ el.classList.add('reveal'); });
+  var bar = document.getElementById('scrollProgress');
+  function onScroll(){
+    if (!bar) return;
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  function tag(el, cls, delay){
+    el.classList.add('reveal', cls);
+    if (delay) el.style.transitionDelay = delay + 'ms';
+  }
+  document.querySelectorAll('.section .kicker, .section h2, .section .lede').forEach(function(el){ tag(el, 'rv-up', 0); });
+  document.querySelectorAll('.grid').forEach(function(grid){
+    Array.prototype.forEach.call(grid.children, function(card, i){
+      tag(card, ['rv-left','rv-up','rv-right'][i % 3], (i % 3) * 100);
+    });
+  });
+  document.querySelectorAll('.step').forEach(function(el, i){ tag(el, 'rv-up', i * 110); });
+  document.querySelectorAll('.faq-item').forEach(function(el, i){ tag(el, 'rv-left', i * 70); });
+  document.querySelectorAll('.trades-inner .chip, .trades-label').forEach(function(el, i){ tag(el, 'rv-pop', i * 60); });
+  document.querySelectorAll('.honest, .pricing-note').forEach(function(el){ tag(el, 'rv-pop', 0); });
+
+  var items = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    items.forEach(function(el){ el.classList.add('in'); });
+    return;
+  }
   var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); setTimeout(function(){ e.target.style.transitionDelay = '0ms'; }, 950); } });
   }, { threshold: 0.12 });
   items.forEach(function(el){ io.observe(el); });
 })();
