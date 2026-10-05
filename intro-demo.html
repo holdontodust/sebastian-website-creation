@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Intro Demo — Sebastian Website Creation</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #020305; height: 100%; overflow: hidden; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hud {
+    position: fixed; z-index: 10; font-family: Arial, Helvetica, sans-serif;
+    color: #dff7ff; -webkit-user-select: none; user-select: none;
+  }
+  #tag {
+    top: 14px; left: 14px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    background: rgba(2,10,14,.55); border: 1px solid rgba(37,208,242,.45);
+    padding: 7px 11px; border-radius: 999px;
+  }
+  .btn {
+    bottom: calc(16px + env(safe-area-inset-bottom)); right: 16px;
+    font-size: 14px; font-weight: 700; letter-spacing: .04em; cursor: pointer;
+    background: rgba(2,10,14,.6); color: #25D0F2;
+    border: 1px solid rgba(37,208,242,.65); padding: 10px 18px; border-radius: 999px;
+  }
+  .btn:active { background: rgba(37,208,242,.25); }
+  #replay { display: none; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="hud" id="tag">Intro demo — not the live site</div>
+<button class="hud btn" id="skip">Skip &gt;&gt;</button>
+<button class="hud btn" id="replay">Replay</button>
+
+<script>
+(function () {
+  var canvas = document.getElementById('gl');
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+
+  var heroImg = new Image();
+  heroImg.src = 'intro-hero.jpg';
+
+  // If WebGL is missing, just show the homepage image full screen.
+  if (!gl) {
+    document.body.style.background = '#020305 url(intro-hero.jpg) center/cover no-repeat';
+    document.getElementById('skip').style.display = 'none';
+    return;
+  }
+
+  var VERT = [
+    'attribute vec2 aPos;',
+    'varying vec2 vUv;',
+    'void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }'
+  ].join('\n');
+
+  var FRAG = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform vec2 uRes;',
+    'uniform float uFlight;',   // accumulated tunnel travel
+    'uniform float uFade;',      // tunnel fade for landing
+    'uniform float uRush;',      // 0..1 final rush zoom
+    'uniform float uHeroScale;', // homepage size 0..1+
+    'uniform float uHeroBright;',
+    'uniform sampler2D uHero;',
+    'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+    'void main(){',
+    '  vec2 uv = vUv * 2.0 - 1.0;',
+    '  uv.x *= uRes.x / uRes.y;',
+    '  float r2 = dot(uv, uv);',
+    '  vec2 p = uv * (1.0 + 0.10 * r2);',              // gentle barrel depth
+    '  p *= (1.0 - 0.16 * uRush);',                    // tunnel surges inward at the end
+    '  float m = max(abs(p.x), abs(p.y));',            // square radius
+    '  m = max(m, 0.0015);',
+    '  float z = 2.0 / m + uFlight;',
+    // perimeter coordinate 0..8 around the square
+    '  vec2 a = abs(p);',
+    '  float s;',
+    '  if (a.x >= a.y) { s = (p.x > 0.0) ? (1.0 + p.y / m) : (5.0 - p.y / m); }',
+    '  else { s = (p.y > 0.0) ? (3.0 - p.x / m) : (7.0 + p.x / m); }',
+    // particle dots on the frames
+    '  vec2 cell = vec2(s * m * 2.6, z);',
+    '  vec2 g = abs(fract(cell) - 0.5);',
+    '  vec2 gd = vec2(g.x, g.y * m * m * 1.3);',       // keep dots round in screen space
+    '  float d = length(gd);',
+    '  float core = smoothstep(0.14, 0.03, d);',
+    '  float halo = smoothstep(0.34, 0.05, d) * 0.38;',
+    '  float distDim = mix(0.22, 1.0, smoothstep(0.04, 0.55, m));',
+    '  float centerFade = smoothstep(0.012, 0.09, m);',
+    '  float dots = (core + halo) * distDim * centerFade;',
+    // faint frame lines under the dots
+    '  float ring = pow(0.5 + 0.5 * cos(6.28318 * z), 6.0) * 0.05 * centerFade;',
+    // sparse drifting dust specks (the noise in the ether)
+    '  vec2 cellD = vec2(s * m * 7.0, z * 3.0);',
+    '  vec2 gD = abs(fract(cellD) - 0.5);',
+    '  float h = hash(floor(cellD));',
+    '  float dust = smoothstep(0.20, 0.02, length(vec2(gD.x, gD.y * m * m * 1.3)))',
+    '             * step(0.965, h) * 0.30 * distDim * centerFade;',
+    '  vec3 cyan = vec3(0.145, 0.815, 0.95);',
+    '  vec3 col = vec3(0.008, 0.012, 0.02);',
+    '  col += cyan * (dots * 1.15 + ring + dust);',
+    '  col += vec3(0.9, 1.0, 1.0) * core * distDim * centerFade * 0.55;', // hot dot centers
+    '  col *= uFade;',
+    // the homepage, deep in the tunnel, growing as we arrive
+    '  float hs = max(uHeroScale, 0.0001);',
+    '  vec2 huv = (vUv - 0.5) / hs + 0.5;',
+    '  if (huv.x > 0.0 && huv.x < 1.0 && huv.y > 0.0 && huv.y < 1.0) {',
+    '    vec3 hero = texture2D(uHero, huv).rgb * uHeroBright;',
+    '    float edge = smoothstep(0.0, 0.0035, huv.x) * smoothstep(1.0, 0.9965, huv.x)',
+    '               * smoothstep(0.0, 0.0035, huv.y) * smoothstep(1.0, 0.9965, huv.y);',
+    '    col = mix(col, hero, edge);',
+    '  } else {',
+    // soft glow halo around the distant screen
+    '    vec2 hd = abs(vUv - 0.5) - 0.5 * hs * vec2(1.0, uRes.x / uRes.y > 1.0 ? 1.0 : 1.0);',
+    '    float hdist = length(max(vec2(abs(vUv.x - 0.5) - 0.5 * hs, abs(vUv.y - 0.5) - 0.5 * hs), 0.0));',
+    '    col += cyan * exp(-hdist * 16.0) * 0.35 * (1.0 - hs) * uFade;',
+    '  }',
+    '  col *= 1.0 - 0.22 * r2;',                        // vignette
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'
+  ].join('\n');
+
+  function shader(type, src) {
+    var sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(sh));
+    }
+    return sh;
+  }
+  var prog = gl.createProgram();
+  gl.attachShader(prog, shader(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  var aPos = gl.getAttribLocation(prog, 'aPos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  var U = {};
+  ['uRes', 'uFlight', 'uFade', 'uRush', 'uHeroScale', 'uHeroBright', 'uHero'].forEach(function (n) {
+    U[n] = gl.getUniformLocation(prog, n);
+  });
+
+  var tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+    new Uint8Array([3, 5, 8, 255]));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  heroImg.onload = function () {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, heroImg);
+  };
+
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---- sound: soft whoosh while flying, click on landing ----
+  var AC = null, whooshGain = null;
+  function initAudio() {
+    if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      var len = AC.sampleRate * 2;
+      var buffer = AC.createBuffer(1, len, AC.sampleRate);
+      var data = buffer.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      var srcNode = AC.createBufferSource();
+      srcNode.buffer = buffer; srcNode.loop = true;
+      var filter = AC.createBiquadFilter();
+      filter.type = 'bandpass'; filter.frequency.value = 480; filter.Q.value = 0.7;
+      whooshGain = AC.createGain(); whooshGain.gain.value = 0;
+      srcNode.connect(filter); filter.connect(whooshGain); whooshGain.connect(AC.destination);
+      srcNode.start();
+    } catch (e) { AC = null; }
+  }
+  function click() {
+    if (!AC) return;
+    var t0 = AC.currentTime;
+    var osc = AC.createOscillator();
+    var gn = AC.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(190, t0);
+    gn.gain.setValueAtTime(0.5, t0);
+    gn.gain.exponentialRampToValueAtTime(0.001, t0 + 0.12);
+    osc.connect(gn); gn.connect(AC.destination);
+    osc.start(t0); osc.stop(t0 + 0.13);
+  }
+  document.addEventListener('pointerdown', initAudio);
+
+  // ---- choreography ----
+  var FLIGHT_END = 2.3, RUSH_END = 2.85, SETTLE_END = 3.10;
+  var start = null, flight = 0, lastTs = null, clicked = false, done = false;
+  var skipBtn = document.getElementById('skip');
+  var replayBtn = document.getElementById('replay');
+
+  function easeInCubic(x) { return x * x * x; }
+  function easeInQuad(x) { return x * x; }
+  function smooth(x) { x = Math.min(Math.max(x, 0), 1); return x * x * (3 - 2 * x); }
+
+  function stateAt(t) {
+    var speed, hs, fade, rush;
+    if (t < FLIGHT_END) {
+      var u = t / FLIGHT_END;
+      speed = 0.6 + 2.0 * u * u;
+      var hu = Math.min(Math.max((t - 0.25) / (FLIGHT_END - 0.25), 0), 1);
+      hs = 0.05 + 0.27 * easeInCubic(hu);
+      fade = 1; rush = 0;
+    } else if (t < RUSH_END) {
+      var v = (t - FLIGHT_END) / (RUSH_END - FLIGHT_END);
+      speed = 2.6 + 6.0 * v;
+      hs = 0.32 + 0.68 * easeInQuad(v);
+      fade = 1 - smooth((t - (RUSH_END - 0.35)) / 0.35);
+      rush = v;
+    } else {
+      speed = 0;
+      hs = 1.0;
+      if (t < SETTLE_END) {
+        var w = (t - RUSH_END) / (SETTLE_END - RUSH_END);
+        hs = 1.0 + 0.012 * Math.sin(Math.PI * w);
+      }
+      fade = 0; rush = 1;
+    }
+    return { speed: speed, hs: hs, fade: fade, rush: rush };
+  }
+
+  function frame(ts) {
+    if (start === null) { start = ts; lastTs = ts; }
+    var t = (ts - start) / 1000;
+    var dt = Math.min((ts - lastTs) / 1000, 0.05);
+    lastTs = ts;
+    var st = stateAt(t);
+    flight += dt * st.speed * 1.6;
+
+    if (t >= RUSH_END && !clicked) { clicked = true; click(); }
+    if (t >= SETTLE_END && !done) {
+      done = true;
+      skipBtn.style.display = 'none';
+      replayBtn.style.display = 'block';
+      if (whooshGain) whooshGain.gain.value = 0;
+    }
+    if (whooshGain && !done) {
+      whooshGain.gain.value = 0.015 + 0.05 * Math.min(st.speed / 8, 1);
+    }
+
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform1f(U.uFlight, flight);
+    gl.uniform1f(U.uFade, st.fade);
+    gl.uniform1f(U.uRush, st.rush);
+    gl.uniform1f(U.uHeroScale, st.hs);
+    var bright = 1.15 - 0.15 * Math.min(st.hs, 1);
+    if (t >= RUSH_END && t < SETTLE_END) bright += 0.06 * (1 - (t - RUSH_END) / (SETTLE_END - RUSH_END));
+    gl.uniform1f(U.uHeroBright, bright);
+    gl.uniform1i(U.uHero, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    requestAnimationFrame(frame);
+  }
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    start = performance.now() - SETTLE_END * 1000;
+  }
+  requestAnimationFrame(frame);
+
+  skipBtn.addEventListener('click', function () {
+    initAudio();
+    start = performance.now() - SETTLE_END * 1000;
+  });
+  replayBtn.addEventListener('click', function () {
+    initAudio();
+    start = null; flight = 0; clicked = false; done = false;
+    skipBtn.style.display = 'block';
+    replayBtn.style.display = 'none';
+  });
+})();
+</script>
+</body>
+</html>
