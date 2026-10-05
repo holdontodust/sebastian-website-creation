@@ -1,0 +1,25 @@
+# Sebastian Website Creation
+
+> Websites for local trades and small businesses in Tampa Bay, Florida. Owner-operated: clients text their updates and everything technical is handled for them.
+
+## What we do
+- Custom websites for local businesses, built in about a week, mobile friendly, with a quote form on every page
+- Google Business Profile management: posts, photos, and profile upkeep month after month
+- Review management: every new Google review gets a reply
+- Website care plans: hosting, security, backups, and changes handled, month to month with no contract
+
+## Who we build for
+Tree services, roofing, plumbing, lawn and landscaping, fencing, HVAC, pressure washing, and other local trades and small businesses.
+
+## Service area
+Tampa Bay, Florida: Tampa, Lutz, Wesley Chapel, Land O' Lakes, Brandon, Riverview, Zephyrhills, Plant City, Gibsonton, Odessa, and Valrico.
+
+## How it works
+1. A free homepage mockup is built first, so the business sees the result before paying anything
+2. The full site is built in about a week
+3. Ongoing care keeps the site, Google profile, and reviews working month after month
+
+## Contact
+- Website: https://holdontodust.github.io/sebastian-website-creation/
+- Email: sebastiankoulias@gmail.com
+- Location: Tampa Bay, Florida
